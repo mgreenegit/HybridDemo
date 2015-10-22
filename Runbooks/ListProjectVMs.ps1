@@ -1,13 +1,16 @@
-$Azure = Get-AutomationConnection -Name "Azure"
+$Azure = Get-AutomationConnection -Name 'Team'
 $Cert = Get-AutomationCertificate -Name $Azure.AutomationCertificateName
+$ID = $Azure.SubscriptionID
+$admin = Get-AutomationPSCredential -Name 'VM Admin'
 
-Set-AzureSubscription -Certificate $Cert -SubscriptionId $Azure.SubscriptionID
-Select-AzureSubscription -SubscriptionId $Azure.SubscriptionID
+Set-AzureSubscription -SubscriptionName 'migreene' -SubscriptionId $ID -Certificate $Cert
+Select-AzureSubscription -SubscriptionId $ID
 
-#Select-AzureSubscription -default -SubscriptionId $Azure.SubscriptionID
+$VMs = get-azurevm | ? name -like *prjx*
 
-<#
-get-azurevm | ? name -like *prjx*
-get-azurermpublicipaddress | ? name -like *prjx*
-#invoke-command -computername 192.168.0.112,40.122.169.77 -ScriptBlock {get-service termservice} -Credential 
-#>
+foreach ($VM in $VMs) {
+	$vm | select name, servicename, status
+	.\InstallWinRMCertAzureVM.ps1 -SubscriptionName 'migreene' -servicename $vm.servicename -vm $vm.name
+	$IP = $vm | Get-AzureEndpoint | % VIP
+	invoke-command -computername "$($vm.name).cloudapp.net" -ScriptBlock {get-service termservice | select pscomputername, displayname, status} -Credential $admin -usessl
+}
