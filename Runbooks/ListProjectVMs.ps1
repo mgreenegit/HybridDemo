@@ -14,7 +14,7 @@ foreach ($VM in $VMs) {
 	$vm | select name, servicename, status
 	.\InstallWinRMCertAzureVM.ps1 -SubscriptionName 'migreene' -servicename $vm.servicename -vm $vm.name
 	$IP = $vm | Get-AzureEndpoint | % VIP
-	$VMNames += "$($vm.name).cloudapp.net"
+	$VMPublicDNSNames += "$($vm.name).cloudapp.net"
 }
 
 invoke-command -computername $VMPublicDNSNames -ScriptBlock {get-service termservice} -Credential $admin -usessl  | select pscomputername, displayname, status
