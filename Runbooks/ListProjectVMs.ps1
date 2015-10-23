@@ -19,4 +19,4 @@ $Status = foreach ($VM in $VMs) {
 	$return += $node
 }
 
-$return
+return $return
