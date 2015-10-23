@@ -8,13 +8,15 @@ Select-AzureSubscription -SubscriptionId $ID
 
 $VMs = get-azurevm | ? name -like *prjx*
 
-$VMPublicDNSNames = @()
+$return = @()
 
-foreach ($VM in $VMs) {
-	$vm | select name, servicename, status
+$Status = foreach ($VM in $VMs) {
+	$node = $vm | select @{Name='VirtualMachine';Expression={$_.name}}, @{Name='VirtualMachineStatus';Expression={$_.status}}
 	.\InstallWinRMCertAzureVM.ps1 -SubscriptionName 'migreene' -servicename $vm.servicename -vm $vm.name
-	$IP = $vm | Get-AzureEndpoint | % VIP
-	$VMPublicDNSNames += "$($vm.name).cloudapp.net"
+	$ServiceCheck = invoke-command -computername "$($vm.name).cloudapp.net" -ScriptBlock {get-service termservice} -Credential $admin -usessl
+	$node | Add-Member -MemberType NoteProperty -Name 'ApplicationService' -Value $ServiceCheck.displayname
+	$node | Add-Member -MemberType NoteProperty -Name 'ApplicationServiceState' -Value $ServiceCheck.status 
+	$return += $node
 }
 
-invoke-command -computername $VMPublicDNSNames -ScriptBlock {get-service termservice} -Credential $admin -usessl  | select pscomputername, displayname, status
+$return
