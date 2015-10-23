@@ -1,1 +1,1 @@
-(Get-Date).GetTimeDateFormats()[110]
+Get-Date
